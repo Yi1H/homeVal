@@ -1,0 +1,15 @@
+.DS_Store
+
+.logs/
+.homeval.pids
+
+**/__pycache__/
+**/*.pyc
+
+**/node_modules/
+homeval-web/.next/
+
+homeval-analysis/target/
+
+.venv/
+venv/
