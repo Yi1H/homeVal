@@ -17,20 +17,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-/**
- * 市场分析控制器：提供房产数据的汇总统计和模拟预测接口
- */
 @RestController
 @RequestMapping("/api/v1/market")
-@CrossOrigin(origins = "*") // 允许跨域，方便前端调用
+@CrossOrigin(origins = "*")
 public class MarketAnalysisController {
 
     private final MarketAnalysisService marketAnalysisService;
     private final PredictionService predictionService;
     private final MarketReportService marketReportService;
 
-    // 手动实现构造函数以进行依赖注入，替代 @RequiredArgsConstructor
     public MarketAnalysisController(
             MarketAnalysisService marketAnalysisService,
             PredictionService predictionService,
@@ -41,9 +36,6 @@ public class MarketAnalysisController {
         this.marketReportService = marketReportService;
     }
 
-    /**
-     * 市场分析接口：支持四个黄金维度的筛选（与前端 FilterState 对齐）
-     */
     @GetMapping("/analytics")
     public Map<String, Object> getAnalytics(
             @RequestParam(name = "property_type", defaultValue = "all") String propertyType,
@@ -54,12 +46,6 @@ public class MarketAnalysisController {
         return marketAnalysisService.getMarketAnalytics(propertyType, schoolTier, locationZone, generation);
     }
 
-    /**
-     * 执行“假设分析”（What-if Analysis）
-     * - 前端只传 base_record_id + simulated_features（bedrooms/bathrooms/school_rating）
-     * - Java 端从 base_record_id 查出其余固定特征并进行“特征缝合”
-     * - 调用 Task 1 的 Python 业务后端（8000）进行预测
-     */
     @PostMapping("/what-if")
     public Map<String, Object> calculateWhatIf(@RequestBody WhatIfRequest request) {
         if (request == null || request.getBaseRecordId() == null || request.getSimulatedFeatures() == null) {
@@ -97,12 +83,6 @@ public class MarketAnalysisController {
         return response;
     }
 
-    /**
-     * 导出市场分析 PDF（按 property_valuation_report.pdf 的结构风格拆成三段）
-     * A：拉取大盘底色（复用 /analytics 的缓存统计）
-     * B：请求 AI 容器 /counterfactual-renovation（基准房 + 三变量）
-     * C：捞取附录清单（当前筛选下前 15 条记录）
-     */
     @PostMapping("/report/pdf")
     public ResponseEntity<byte[]> exportReportPdf(@RequestBody ReportPdfRequest request) {
         if (request == null || request.getFilters() == null) {

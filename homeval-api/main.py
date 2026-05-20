@@ -10,7 +10,6 @@ import time
 import os
 import pandas as pd
 
-# 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -20,19 +19,16 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# 允许跨域请求 (Next.js 默认运行在 3000 端口)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # 生产环境应指定具体域名
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ML 服务的地址
 ML_SERVICE_URL = "http://localhost:8001"
 
-# 反事实模拟所需的本地数据集（用 base_record_id 还原“不可变事实特征”）
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH = os.path.join(BASE_DIR, "data", "House Price Dataset.csv")
 
@@ -43,8 +39,6 @@ try:
 except Exception as e:
     logger.error(f"加载市场数据集失败: {e}")
     _market_by_id = {}
-
-# --- 严格的 Pydantic 数据模型 ---
 
 class HousingFeatures(BaseModel):
     """
@@ -61,7 +55,6 @@ class HousingFeatures(BaseModel):
     @field_validator('year_built')
     @classmethod
     def validate_year(cls, v: int) -> int:
-        # 额外的自定义校验逻辑
         if v > 2026:
             raise ValueError('建造年份不能晚于当前预测基准年 2026')
         return v
@@ -82,8 +75,6 @@ class CounterfactualRenovationRequest(BaseModel):
         if unknown:
             raise ValueError(f"simulated_features 不允许的字段: {sorted(list(unknown))}")
         return v
-
-# --- 路由定义 ---
 
 @app.get("/health")
 async def health():
@@ -127,29 +118,23 @@ async def predict_proxy(data: HousingFeatures):
     
     try:
         async with httpx.AsyncClient() as client:
-            # 向下游 ML 服务发起 POST 请求
             response = await client.post(
                 f"{ML_SERVICE_URL}/predict",
                 json=data.model_dump(),
-                timeout=10.0 # 设置 10 秒超时
+                timeout=10.0
             )
             
-            # 处理非 200 响应
             if response.status_code >= 500:
                 logger.error(f"下游服务异常: {response.text}")
                 raise HTTPException(status_code=502, detail="机器学习模型服务暂时不可用")
             elif response.status_code != 200:
                 raise HTTPException(status_code=response.status_code, detail=response.text)
             
-            # 处理成功响应
             result = response.json()
-            # 在后端生成唯一 ID 和时间戳，供前端直接使用
             if isinstance(result, dict):
-                # 单个预测
                 result["id"] = str(uuid.uuid4())
                 result["timestamp"] = int(time.time() * 1000)
             elif isinstance(result, list):
-                # 批量预测（虽然目前前端主要用单条，但也做兼容）
                 for item in result:
                     item["id"] = str(uuid.uuid4())
                     item["timestamp"] = int(time.time() * 1000)
@@ -226,5 +211,4 @@ async def counterfactual_renovation(req: CounterfactualRenovationRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # 业务后端运行在 8000 端口，供前端调用
     uvicorn.run(app, host="0.0.0.0", port=8000)

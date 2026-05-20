@@ -8,25 +8,15 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 预测服务：集成 Task 1 的 Python ML 模型服务
- */
 @Service
 public class PredictionService {
 
     private final WebClient webClient;
 
     public PredictionService(WebClient.Builder webClientBuilder) {
-        // Task 1 API 运行在 8000 端口
         this.webClient = webClientBuilder.baseUrl("http://localhost:8000").build();
     }
 
-    /**
-     * 获取“假设分析”预测结果（带缓存）
-     * 说明：
-     * - 缓存 key 使用 base_record_id + 三个可变特征，保证稳定且可读
-     * - 使用 WebClient 但以同步方式 block 获取结果，便于 Spring Cache 正常缓存
-     */
     @Cacheable(value = "whatIfPredictions", key = "#baseRecordId + ':' + #bedrooms + ':' + #bathrooms + ':' + #schoolRating")
     public Map<String, Object> getWhatIfPredictionCached(
             Long baseRecordId,
@@ -43,11 +33,6 @@ public class PredictionService {
                 .block(Duration.ofSeconds(10));
     }
 
-    /**
-     * 反事实改造模拟（供 PDF 报告导出使用）
-     * - Java 仅传 base_record_id + 三个可变特征给业务后端 /counterfactual-renovation
-     * - 业务后端会用 base_record_id 还原其余事实特征，再调用 ML 服务 /predict
-     */
     @Cacheable(value = "whatIfPredictions", key = "'cf:' + #baseRecordId + ':' + #bedrooms + ':' + #bathrooms + ':' + #schoolRating")
     public Map<String, Object> getCounterfactualRenovationCached(
             Long baseRecordId,

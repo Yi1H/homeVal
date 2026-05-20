@@ -7,40 +7,30 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error
 import joblib
 import os
-# 导入提取出的通用工具函数
 from utils import preprocess_features, FEATURE_COLS
 
 def train_model():
     """
     重构后的训练脚本：使用统一的 utils.py 进行特征处理。
     """
-    # 1. 加载数据
     data_path = os.path.join(os.path.dirname(__file__), 'data', 'House Price Dataset.csv')
     df = pd.read_csv(data_path)
 
-    # 2. 特征工程 (调用统一工具函数)
-    # 这一步会自动计算 house_age 并处理好列顺序
     X = preprocess_features(df)
     y = df['price']
 
-    # 3. 数据集切分
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # 4. 数据标准化 (Feature Scaling)
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # 5. 模型训练与对比
-    
-    # 方案 A: 多元线性回归
     lr_model = LinearRegression()
     lr_model.fit(X_train_scaled, y_train)
     y_pred_lr = lr_model.predict(X_test_scaled)
     r2_lr = r2_score(y_test, y_pred_lr)
     mae_lr = mean_absolute_error(y_test, y_pred_lr)
 
-    # 方案 B: 随机森林回归
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
     rf_model.fit(X_train_scaled, y_train)
     y_pred_rf = rf_model.predict(X_test_scaled)
@@ -55,7 +45,6 @@ def train_model():
     model_type = "Random Forest" if r2_rf > r2_lr else "Linear Regression"
     print(f"\n🏆 最终选择模型: {model_type}")
 
-    # 6. 保存成果
     model_dir = os.path.join(os.path.dirname(__file__), 'model')
     os.makedirs(model_dir, exist_ok=True)
     

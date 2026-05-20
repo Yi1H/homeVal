@@ -5,23 +5,19 @@ import joblib
 import os
 import pandas as pd
 import numpy as np
-# 导入通用的工具函数和常量
 from utils import preprocess_features, FEATURE_COLS
 
-# 初始化 FastAPI 应用
 app = FastAPI(
     title="房屋价格预测 API",
     description="这是一个基于机器学习模型的 API，采用标准化和特征工程优化，支持单条和批量预测。",
     version="1.1.1"
 )
 
-# 路径设置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'model', 'house_price_model.joblib')
 SCALER_PATH = os.path.join(BASE_DIR, 'model', 'scaler.joblib')
 METRICS_PATH = os.path.join(BASE_DIR, 'model', 'model_metrics.joblib')
 
-# 加载模型、标准化器和指标
 try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
@@ -31,8 +27,6 @@ except Exception as e:
     model = None
     scaler = None
     metrics = None
-
-# --- 数据模型定义 ---
 
 class HousingFeatures(BaseModel):
     """输入特征模型"""
@@ -62,8 +56,6 @@ class ModelInfoResponse(BaseModel):
     lr_coefficients: dict
     lr_intercept: float
     feature_importances: Union[dict, None]
-
-# --- API 路由 ---
 
 @app.get("/health", summary="健康检查")
 async def health():
@@ -97,18 +89,13 @@ async def predict(data: Union[HousingFeatures, List[HousingFeatures]]):
         raise HTTPException(status_code=503, detail="模型或标准化器未就绪")
     
     try:
-        # 1. 转换为 DataFrame
         input_list = data if isinstance(data, list) else [data]
         df = pd.DataFrame([item.model_dump() for item in input_list])
         
-        # 2. 调用通用的特征工程逻辑 (来自 utils.py)
-        # 这确保了 house_age 的计算和特征顺序与训练时完全一致
         df_processed = preprocess_features(df)
         
-        # 3. 数据标准化 (Scaling)
         X_scaled = scaler.transform(df_processed)
         
-        # 4. 模型推理
         predictions = model.predict(X_scaled)
         
         if isinstance(data, list):
@@ -121,5 +108,4 @@ async def predict(data: Union[HousingFeatures, List[HousingFeatures]]):
 
 if __name__ == "__main__":
     import uvicorn
-    # 机器学习服务运行在 8001 端口
     uvicorn.run(app, host="0.0.0.0", port=8001)

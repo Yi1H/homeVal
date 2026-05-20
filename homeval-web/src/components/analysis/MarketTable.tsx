@@ -20,20 +20,13 @@ interface MarketTableProps {
   bodyHeight?: number;
 }
 
-/**
- * 市场明细表组件：提供数据的搜索、多列排序和分页展示功能
- */
 export function MarketTable({ data, selectedId, onSelect, bodyHeight = 520 }: MarketTableProps) {
   type SortKey = "id" | "price" | "square_footage" | "bedrooms" | "bathrooms" | "year_built";
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: "asc" | "desc" } | null>(null);
 
-  /**
-   * 使用 useMemo 优化：仅当原始数据或排序配置变化时才重新计算
-   */
   const sortedData = useMemo(() => {
     const result = [...data];
 
-    // 执行列排序
     if (sortConfig) {
       result.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -49,9 +42,6 @@ export function MarketTable({ data, selectedId, onSelect, bodyHeight = 520 }: Ma
     return result;
   }, [data, sortConfig]);
 
-  /**
-   * 处理排序点击
-   */
   const requestSort = (key: SortKey) => {
     let direction: "asc" | "desc" = "asc";
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
@@ -70,7 +60,6 @@ export function MarketTable({ data, selectedId, onSelect, bodyHeight = 520 }: Ma
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
-                {/* 表头：支持点击排序 */}
                 <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => requestSort('id')}>
                   ID <ArrowUpDown className="inline ml-1 h-3 w-3" />
                 </TableHead>

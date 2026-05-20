@@ -11,7 +11,6 @@ const api = axios.create({
 export const estimatorApi = {
   predict: async (data: HousingFeatures): Promise<PredictionResult> => {
     try {
-      // 发送请求，后端现在返回包含 id 和 prediction 的对象
       const response = await api.post("/predict", data);
       return response.data;
     } catch (error: unknown) {

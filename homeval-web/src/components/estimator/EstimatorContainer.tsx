@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// --- UI 组件直接引入 ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +28,6 @@ import { Slider } from "@/components/ui/slider";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 
-// --- 1. 校验 Schema (含自定义错误提示) ---
 const schema = z.object({
   square_footage: z.number({ message: "请输入有效的数字" })
     .int("面积必须为整数")
@@ -70,7 +68,6 @@ export function EstimatorContainer() {
     return [];
   });
 
-  // --- 2. 表单初始化 ---
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -84,12 +81,10 @@ export function EstimatorContainer() {
     },
   });
 
-  // --- 3. 数据持久化与副作用 ---
   useEffect(() => {
     localStorage.setItem("homeval_history", JSON.stringify(history));
   }, [history]);
 
-  // --- 4. 核心预测逻辑 ---
   const onSubmit = async (data: z.infer<typeof schema>) => {
     setIsLoading(true);
     try {

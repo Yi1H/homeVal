@@ -20,12 +20,6 @@ interface MarketChartsProps {
   full?: boolean;
 }
 
-/**
- * 市场图表组件：混合散点趋势图（面积 vs 价格）
- * - 灰点：当前筛选后的全部房源分布
- * - 蓝点：当前选中的“基准房源”
- * - 红点：What-if 的反事实预测点
- */
 export function MarketCharts({ records, selectedRecord, whatIf, full }: MarketChartsProps) {
   const selectedData = selectedRecord
     ? [{ square_footage: selectedRecord.square_footage, price: selectedRecord.price, id: selectedRecord.id }]

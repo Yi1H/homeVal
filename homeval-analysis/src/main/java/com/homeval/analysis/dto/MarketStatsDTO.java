@@ -2,9 +2,6 @@ package com.homeval.analysis.dto;
 
 import java.util.Map;
 
-/**
- * 市场统计 DTO：封装分析结果
- */
 public class MarketStatsDTO {
     private Double averagePrice;
     private Double minPrice;
@@ -22,7 +19,6 @@ public class MarketStatsDTO {
         this.ageDistribution = ageDistribution;
     }
 
-    // Getters 和 Setters
     public Double getAveragePrice() { return averagePrice; }
     public void setAveragePrice(Double averagePrice) { this.averagePrice = averagePrice; }
     public Double getMinPrice() { return minPrice; }
@@ -34,7 +30,6 @@ public class MarketStatsDTO {
     public Map<String, Long> getAgeDistribution() { return ageDistribution; }
     public void setAgeDistribution(Map<String, Long> ageDistribution) { this.ageDistribution = ageDistribution; }
 
-    // 替代 @Builder
     public static class Builder {
         private Double averagePrice;
         private Double minPrice;

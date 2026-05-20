@@ -30,7 +30,6 @@ export default function RootLayout({
             © 2026 HomeVal. All rights reserved.
           </div>
         </footer>
-        {/* shadcn/ui Toast 通知组件 */}
         <Toaster position="top-center" richColors />
       </body>
     </html>

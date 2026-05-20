@@ -2,9 +2,6 @@ package com.homeval.analysis.model;
 
 import com.opencsv.bean.CsvBindByName;
 
-/**
- * 房产数据实体类：对应 CSV 文件中的每一行记录
- */
 public class PropertyData {
     @CsvBindByName(column = "id")
     private Long id;
@@ -47,7 +44,6 @@ public class PropertyData {
         this.price = price;
     }
 
-    // 手动实现 Getters 和 Setters 以确保编译兼容性
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Double getSquareFootage() { return squareFootage; }

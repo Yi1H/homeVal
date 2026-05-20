@@ -15,31 +15,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 
-/**
- * 市场分析服务：负责数据加载、汇总统计及计算逻辑
- */
 @Service
 public class MarketAnalysisService {
 
     private static final Logger log = LoggerFactory.getLogger(MarketAnalysisService.class);
 
-    // 内存中的房产数据缓存
     private List<PropertyData> propertyDataList = new ArrayList<>();
     
-    // 引用 Task 1 的原始 CSV 数据文件路径
     private final String CSV_PATH = "../homeval-api/data/House Price Dataset.csv";
 
-    /**
-     * 服务启动后自动加载 CSV 数据
-     */
     @PostConstruct
     public void init() {
         loadData();
     }
 
-    /**
-     * 解析 CSV 文件并转换为 Java 对象列表
-     */
     private void loadData() {
         try {
             String absolutePath = Paths.get(CSV_PATH).toAbsolutePath().normalize().toString();
@@ -61,13 +50,6 @@ public class MarketAnalysisService {
         }
     }
 
-    /**
-     * 市场分析核心接口：支持四个黄金维度的筛选（与前端筛选器契约对齐）
-     * - property_type: all | single_family | condo_apartment
-     * - school_tier: all | base | good | elite
-     * - location_zone: all | downtown | suburban_inner | suburban_out
-     * - generation: all | modern | mature | legacy
-     */
     @Cacheable(value = "marketAnalytics", key = "#propertyType + ':' + #schoolTier + ':' + #locationZone + ':' + #generation")
     public Map<String, Object> getMarketAnalytics(String propertyType, String schoolTier, String locationZone, String generation) {
         if (propertyDataList.isEmpty()) {
@@ -230,9 +212,6 @@ public class MarketAnalysisService {
         return "legacy";
     }
 
-    /**
-     * 获取全量数据列表
-     */
     public List<PropertyData> getAllData() {
         return propertyDataList;
     }

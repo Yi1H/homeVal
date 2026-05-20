@@ -19,9 +19,6 @@ interface AnalysisDashboardProps {
   initialAnalytics: MarketAnalyticsResponse;
 }
 
-/**
- * 分析仪表盘组件：应用的“大脑”，负责集成统计卡片、图表、数据表和假设分析面板
- */
 function InfoTip({ content }: { content: string }) {
   const [open, setOpen] = useState(false);
 
