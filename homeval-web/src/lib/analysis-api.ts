@@ -1,7 +1,10 @@
 import { FilterState, MarketAnalyticsResponse, WhatIfRequest, WhatIfResponse } from "@/types/analysis";
 
 const ANALYSIS_API_URL =
-  process.env.NEXT_PUBLIC_ANALYSIS_API_URL || "http://localhost:8080/api/v1/market";
+  process.env.NEXT_PUBLIC_ANALYSIS_API_URL ||
+  (typeof window === "undefined"
+    ? "http://127.0.0.1:8080/api/v1/market"
+    : "/analysis-api/api/v1/market");
 
 function toQueryString(filters: FilterState) {
   const params = new URLSearchParams();
