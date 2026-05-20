@@ -319,23 +319,25 @@ public class MarketReportService {
     }
 
     private Map<String, Object> safeMap(Object obj) {
-        if (obj instanceof Map<?, ?> map) {
-            return (Map<String, Object>) map;
+        if (obj instanceof Map) {
+            return (Map<String, Object>) obj;
         }
-        return Map.of();
+        return java.util.Collections.emptyMap();
     }
 
     private int toInt(Object obj) {
-        if (obj instanceof Number n) return n.intValue();
-        if (obj instanceof String s) {
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        if (obj instanceof String) {
+            String s = (String) obj;
             try { return Integer.parseInt(s); } catch (Exception ignored) {}
         }
         return 0;
     }
 
     private double toDouble(Object obj) {
-        if (obj instanceof Number n) return n.doubleValue();
-        if (obj instanceof String s) {
+        if (obj instanceof Number) return ((Number) obj).doubleValue();
+        if (obj instanceof String) {
+            String s = (String) obj;
             try { return Double.parseDouble(s); } catch (Exception ignored) {}
         }
         return 0.0;
@@ -343,8 +345,9 @@ public class MarketReportService {
 
     private Double toNullableDouble(Object obj) {
         if (obj == null) return null;
-        if (obj instanceof Number n) return n.doubleValue();
-        if (obj instanceof String s) {
+        if (obj instanceof Number) return ((Number) obj).doubleValue();
+        if (obj instanceof String) {
+            String s = (String) obj;
             try { return Double.parseDouble(s); } catch (Exception ignored) {}
         }
         return null;

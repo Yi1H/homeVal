@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PushbackReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 import java.util.*;
 
 @Service
@@ -55,7 +56,7 @@ public class MarketAnalysisService {
         if (propertyDataList.isEmpty()) {
             Map<String, Object> empty = new HashMap<>();
             empty.put("stats", emptySummary());
-            empty.put("records", List.of());
+            empty.put("records", java.util.Collections.emptyList());
             return empty;
         }
 
@@ -70,7 +71,7 @@ public class MarketAnalysisService {
                 .filter(r -> matchesFilter(st, (String) r.get("school_tier")))
                 .filter(r -> matchesFilter(lz, (String) r.get("location_zone")))
                 .filter(r -> matchesFilter(gen, (String) r.get("generation")))
-                .toList();
+                .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("stats", buildSummary(records));
@@ -122,8 +123,8 @@ public class MarketAnalysisService {
         summary.put("min_price", 0.0);
         summary.put("max_price", 0.0);
         summary.put("avg_price_per_sqft", 0.0);
-        summary.put("generation_distribution", Map.of());
-        summary.put("location_zone_avg_price_per_sqft", Map.of());
+        summary.put("generation_distribution", java.util.Collections.emptyMap());
+        summary.put("location_zone_avg_price_per_sqft", java.util.Collections.emptyMap());
         return summary;
     }
 

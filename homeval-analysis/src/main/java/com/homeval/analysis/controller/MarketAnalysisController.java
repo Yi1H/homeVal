@@ -115,10 +115,11 @@ public class MarketAnalysisController {
 
         List<Map<String, Object>> records = new ArrayList<>();
         Object recordsObj = analytics.get("records");
-        if (recordsObj instanceof List<?> list) {
+        if (recordsObj instanceof List) {
+            List<?> list = (List<?>) recordsObj;
             for (Object item : list) {
-                if (item instanceof Map<?, ?> map) {
-                    records.add((Map<String, Object>) map);
+                if (item instanceof Map) {
+                    records.add((Map<String, Object>) item);
                 }
             }
         }
