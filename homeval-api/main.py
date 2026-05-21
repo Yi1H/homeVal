@@ -27,10 +27,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ML_SERVICE_URL = "http://localhost:8001"
+ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATASET_PATH = os.path.join(BASE_DIR, "data", "House Price Dataset.csv")
+DATASET_PATH = os.getenv("MARKET_DATASET_PATH", os.path.join(BASE_DIR, "data", "House Price Dataset.csv"))
 
 try:
     _df_market = pd.read_csv(DATASET_PATH)

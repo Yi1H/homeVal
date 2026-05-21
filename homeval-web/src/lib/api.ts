@@ -1,9 +1,9 @@
 import axios from "axios";
 import { HousingFeatures, ModelInfo, PredictionResult } from "@/types/estimator";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window === "undefined" ? "http://127.0.0.1:8000" : "/api");
+const API_BASE_URL_CLIENT = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE_URL_SERVER = process.env.API_INTERNAL_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = typeof window === "undefined" ? API_BASE_URL_SERVER : API_BASE_URL_CLIENT;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

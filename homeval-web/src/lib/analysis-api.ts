@@ -1,10 +1,13 @@
 import { FilterState, MarketAnalyticsResponse, WhatIfRequest, WhatIfResponse } from "@/types/analysis";
 
+const ANALYSIS_API_URL_CLIENT =
+  process.env.NEXT_PUBLIC_ANALYSIS_API_URL || "/analysis-api/api/v1/market";
+
+const ANALYSIS_API_URL_SERVER =
+  process.env.ANALYSIS_INTERNAL_URL || "http://127.0.0.1:8080/api/v1/market";
+
 const ANALYSIS_API_URL =
-  process.env.NEXT_PUBLIC_ANALYSIS_API_URL ||
-  (typeof window === "undefined"
-    ? "http://127.0.0.1:8080/api/v1/market"
-    : "/analysis-api/api/v1/market");
+  typeof window === "undefined" ? ANALYSIS_API_URL_SERVER : ANALYSIS_API_URL_CLIENT;
 
 function toQueryString(filters: FilterState) {
   const params = new URLSearchParams();

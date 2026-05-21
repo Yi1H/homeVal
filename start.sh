@@ -147,6 +147,8 @@ start() {
   echo "启动前端（3000）..."
   (
     cd "${ROOT_DIR}/homeval-web"
+    export NEXT_PUBLIC_API_URL="http://localhost:8000"
+    export NEXT_PUBLIC_ANALYSIS_API_URL="http://localhost:8080/api/v1/market"
     exec npm run dev -- --port 3000
   ) > "${LOG_DIR}/web.log" 2>&1 &
   write_pid "web" "$!"

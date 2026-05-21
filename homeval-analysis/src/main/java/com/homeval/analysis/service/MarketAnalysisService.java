@@ -23,7 +23,9 @@ public class MarketAnalysisService {
 
     private List<PropertyData> propertyDataList = new ArrayList<>();
     
-    private final String CSV_PATH = "../homeval-api/data/House Price Dataset.csv";
+    private final String csvPath = Optional.ofNullable(System.getenv("MARKET_DATA_CSV_PATH"))
+            .filter(v -> !v.isBlank())
+            .orElse("../homeval-api/data/House Price Dataset.csv");
 
     @PostConstruct
     public void init() {
@@ -32,7 +34,7 @@ public class MarketAnalysisService {
 
     private void loadData() {
         try {
-            String absolutePath = Paths.get(CSV_PATH).toAbsolutePath().normalize().toString();
+            String absolutePath = Paths.get(csvPath).toAbsolutePath().normalize().toString();
             log.info("正在从以下路径加载市场数据: {}", absolutePath);
             InputStreamReader reader = new InputStreamReader(new FileInputStream(absolutePath), StandardCharsets.UTF_8);
             PushbackReader pushbackReader = new PushbackReader(reader, 1);
