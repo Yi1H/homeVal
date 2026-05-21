@@ -1,0 +1,39 @@
+services:
+  nginx:
+    image: ghcr.io/yi1h/homeval-nginx:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+      - api
+      - analysis
+
+  web:
+    image: ghcr.io/yi1h/homeval-web:latest
+    environment:
+      ANALYSIS_INTERNAL_URL: http://analysis:8080/api/v1/market
+      API_INTERNAL_URL: http://api:8000
+
+  api:
+    image: ghcr.io/yi1h/homeval-api:latest
+    command: ["python","-m","uvicorn","main:app","--host","0.0.0.0","--port","8000"]
+    environment:
+      ML_SERVICE_URL: http://ml:8001
+      MARKET_DATASET_PATH: /data/House Price Dataset.csv
+    volumes:
+      - ./homeval-api/data:/data:ro
+    depends_on:
+      - ml
+
+  ml:
+    image: ghcr.io/yi1h/homeval-api:latest
+    command: ["python","-m","uvicorn","ml_service:app","--host","0.0.0.0","--port","8001"]
+
+  analysis:
+    image: ghcr.io/yi1h/homeval-analysis:latest
+    environment:
+      MARKET_DATA_CSV_PATH: /data/House Price Dataset.csv
+    volumes:
+      - ./homeval-api/data:/data:ro
+    depends_on:
+      - api
