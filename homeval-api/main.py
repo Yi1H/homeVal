@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 下游模型推理服务
 ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +43,8 @@ except Exception as e:
 
 class HousingFeatures(BaseModel):
     """
-    接收前端表单的严格校验模型
+    业务侧的输入校验模型
+    通过校验后会转发给下游 ML 服务 /predict 做推理。
     """
     square_footage: float = Field(..., gt=0, description="面积必须大于 0")
     bedrooms: int = Field(..., ge=1, le=10, description="卧室数量在 1-10 之间")
@@ -61,6 +63,10 @@ class HousingFeatures(BaseModel):
 
 
 class CounterfactualRenovationRequest(BaseModel):
+    """
+    - base_record_id：从市场数据集里定位到某条房源记录
+    - simulated_features：只允许覆盖可变字段，用于 what-if 推演
+    """
     base_record_id: int = Field(..., description="基准房源 ID")
     simulated_features: dict = Field(
         ...,
@@ -78,7 +84,7 @@ class CounterfactualRenovationRequest(BaseModel):
 
 @app.get("/health")
 async def health():
-    """检查业务后端及下游 ML 服务的健康状态"""
+    """检查业务后端及下游 ML 服务的健康状态（用于启动自检/部署探活）。"""
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{ML_SERVICE_URL}/health", timeout=2.0)
@@ -93,7 +99,7 @@ async def health():
 
 @app.get("/model-info")
 async def get_model_info():
-    """转发获取模型信息的请求"""
+    """转发获取模型信息的请求（模型类型、指标、系数/特征重要性等）。"""
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(f"{ML_SERVICE_URL}/model-info", timeout=5.0)
@@ -107,20 +113,26 @@ async def get_model_info():
         raise HTTPException(status_code=500, detail="业务后端通信异常")
 
 @app.post("/predict")
-async def predict_proxy(data: HousingFeatures):
+async def predict_proxy(data: Union[List[HousingFeatures], HousingFeatures]):
     """
     核心预测代理路由
     1. 接收前端严格校验后的数据
     2. 向 Task 1 的 ML 模型服务发起通信
     3. 妥善处理超时与异常
     """
-    logger.info(f"接收到预测请求: {data.model_dump()}")
+    # 既支持单条对象，也支持批量 list（用于 test_batch.py 或批量对比）
+    if isinstance(data, list):
+        logger.info(f"接收到预测请求(批量): count={len(data)}")
+        payload = [item.model_dump() for item in data]
+    else:
+        logger.info(f"接收到预测请求: {data.model_dump()}")
+        payload = data.model_dump()
     
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{ML_SERVICE_URL}/predict",
-                json=data.model_dump(),
+                json=payload,
                 timeout=10.0
             )
             
@@ -131,6 +143,7 @@ async def predict_proxy(data: HousingFeatures):
                 raise HTTPException(status_code=response.status_code, detail=response.text)
             
             result = response.json()
+            # 给返回值补充 id/timestamp，便于前端列表渲染与追踪请求
             if isinstance(result, dict):
                 result["id"] = str(uuid.uuid4())
                 result["timestamp"] = int(time.time() * 1000)
@@ -164,6 +177,7 @@ async def counterfactual_renovation(req: CounterfactualRenovationRequest):
     if not base:
         raise HTTPException(status_code=404, detail="找不到 base_record_id 对应的房源记录")
 
+    # 以数据集中的记录为“事实基准”，只用 simulated_features 覆盖允许变更的字段
     full_features = {
         "square_footage": float(base["square_footage"]),
         "bedrooms": int(req.simulated_features.get("bedrooms", base["bedrooms"])),

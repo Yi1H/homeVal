@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterState, HousingRecord, MarketAnalyticsResponse, WhatIfResponse } from "@/types/analysis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileJson, FileText, CircleHelp } from "lucide-react";
@@ -94,6 +94,14 @@ export function AnalysisDashboard({ initialAnalytics }: AnalysisDashboardProps) 
     school_rating: initialAnalytics.records[0]?.school_rating ?? 7,
   }));
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  const handleSimulated = useCallback((res: WhatIfResponse | null) => {
+    setWhatIf(res);
+  }, []);
+
+  const handleInputChange = useCallback((features: { bedrooms: number; bathrooms: number; school_rating: number }) => {
+    setSimulatedInput(features);
+  }, []);
 
   const updateFilters = (patch: Partial<FilterState>) => {
     setIsLoadingAnalytics(true);
@@ -281,8 +289,8 @@ export function AnalysisDashboard({ initialAnalytics }: AnalysisDashboardProps) 
           <WhatIfPanel
             key={selectedRecord?.id ?? "no-base"}
             baseRecord={selectedRecord}
-            onSimulated={(res: WhatIfResponse | null) => setWhatIf(res)}
-            onInputChange={(features) => setSimulatedInput(features)}
+            onSimulated={handleSimulated}
+            onInputChange={handleInputChange}
           />
         </div>
 

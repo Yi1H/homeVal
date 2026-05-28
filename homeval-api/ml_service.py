@@ -6,12 +6,15 @@ import os
 import pandas as pd
 import numpy as np
 from utils import preprocess_features, FEATURE_COLS
+import time
 
 app = FastAPI(
     title="房屋价格预测 API",
     description="这是一个基于机器学习模型的 API，采用标准化和特征工程优化，支持单条和批量预测。",
     version="1.1.1"
 )
+
+SERVICE_STARTED_AT_MONOTONIC = time.monotonic()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'model', 'house_price_model.joblib')
@@ -59,7 +62,13 @@ class ModelInfoResponse(BaseModel):
 
 @app.get("/health", summary="健康检查")
 async def health():
-    return {"status": "healthy", "model_loaded": model is not None, "scaler_loaded": scaler is not None}
+    uptime_seconds = time.monotonic() - SERVICE_STARTED_AT_MONOTONIC
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None,
+        "scaler_loaded": scaler is not None,
+        "service_uptime": uptime_seconds,
+    }
 
 @app.get("/model-info", response_model=ModelInfoResponse, summary="查看模型专业参数")
 async def model_info():
@@ -84,7 +93,7 @@ async def model_info():
     }
 
 @app.post("/predict", response_model=Union[PredictionResponse, BatchPredictionResponse], summary="执行预测")
-async def predict(data: Union[HousingFeatures, List[HousingFeatures]]):
+async def predict(data: Union[List[HousingFeatures], HousingFeatures]):
     if not model or not scaler:
         raise HTTPException(status_code=503, detail="模型或标准化器未就绪")
     
@@ -93,9 +102,7 @@ async def predict(data: Union[HousingFeatures, List[HousingFeatures]]):
         df = pd.DataFrame([item.model_dump() for item in input_list])
         
         df_processed = preprocess_features(df)
-        
         X_scaled = scaler.transform(df_processed)
-        
         predictions = model.predict(X_scaled)
         
         if isinstance(data, list):

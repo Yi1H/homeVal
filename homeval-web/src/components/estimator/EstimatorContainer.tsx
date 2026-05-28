@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { PredictionResult } from "@/types/estimator";
+import { ModelInfo, PredictionResult } from "@/types/estimator";
 import { estimatorApi } from "@/lib/api";
 import { 
   Calculator, 
@@ -60,6 +60,8 @@ const schema = z.object({
 export function EstimatorContainer() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentResult, setCurrentResult] = useState<PredictionResult | null>(null);
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const [isLoadingModelInfo, setIsLoadingModelInfo] = useState(true);
   const [history, setHistory] = useState<PredictionResult[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("homeval_history");
@@ -85,13 +87,34 @@ export function EstimatorContainer() {
     localStorage.setItem("homeval_history", JSON.stringify(history));
   }, [history]);
 
+  useEffect(() => {
+    let cancelled = false;
+    estimatorApi
+      .getModelInfo()
+      .then((res) => {
+        if (cancelled) return;
+        setModelInfo(res);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error("无法获取模型参数，请确保 Python(8000) 与 ML(8001) 服务正常运行");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsLoadingModelInfo(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const onSubmit = async (data: z.infer<typeof schema>) => {
     setIsLoading(true);
     try {
       const result = await estimatorApi.predict(data);
       const fullResult = { ...data, ...result };
       setCurrentResult(fullResult);
-      setHistory(prev => [fullResult, ...prev].slice(0, 5));
+      setHistory(prev => [fullResult, ...prev].slice(0, 10));
       toast.success("估算成功！");
     } catch (err) {
       const message = err instanceof Error ? err.message : "预测失败";
@@ -108,16 +131,16 @@ export function EstimatorContainer() {
         <p className="text-xl text-muted-foreground">直接输入参数，获取基于 ML 模型 实时估值。</p>
       </div>
 
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
+      <div className="grid lg:grid-cols-12 gap-8 items-stretch">
         {/* --- 输入表单 --- */}
-        <Card className="lg:col-span-5 shadow-lg border-primary/10">
+        <Card className="lg:col-span-5 h-full shadow-lg border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Calculator className="text-primary" /> 输入房产参数</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-full flex flex-col">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <FormField control={form.control} name="square_footage" render={({ field }) => (
                     <FormItem>
                       <FormLabel>面积 (sq ft)</FormLabel>
@@ -208,6 +231,130 @@ export function EstimatorContainer() {
               等待输入参数...
             </div>
           )}
+
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-medium">模型参数</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingModelInfo ? (
+                <div className="text-sm text-muted-foreground">加载中...</div>
+              ) : modelInfo ? (
+                <>
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table className="min-w-max">
+                      <TableHeader className="bg-muted/50">
+                        <TableRow>
+                          <TableHead>Field</TableHead>
+                          <TableHead>字段</TableHead>
+                          <TableHead className="text-right">Value</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>model_type</TableCell>
+                          <TableCell>模型类型</TableCell>
+                          <TableCell className="text-right">{modelInfo.model_type}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>r2</TableCell>
+                          <TableCell>决定系数</TableCell>
+                          <TableCell className="text-right">{Number(modelInfo.r2).toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>mae</TableCell>
+                          <TableCell>平均绝对误差</TableCell>
+                          <TableCell className="text-right">{Number(modelInfo.mae).toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>mape</TableCell>
+                          <TableCell>平均绝对百分比误差</TableCell>
+                          <TableCell className="text-right">{Number(modelInfo.mape).toFixed(2)}</TableCell>
+                        </TableRow>
+                        {modelInfo.feature_importances ? null : (
+                          <TableRow>
+                            <TableCell>lr_intercept</TableCell>
+                            <TableCell>线性回归截距</TableCell>
+                            <TableCell className="text-right">{Number(modelInfo.lr_intercept).toFixed(2)}</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {modelInfo.feature_importances ? (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table className="min-w-max">
+                        <TableHeader className="bg-muted/50">
+                          <TableRow>
+                            <TableHead>Feature</TableHead>
+                            <TableHead>特征</TableHead>
+                            <TableHead className="text-right">Importance</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(modelInfo.feature_importances)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([feature, value]) => {
+                              const zh: Record<string, string> = {
+                                square_footage: "面积",
+                                bedrooms: "卧室数量",
+                                bathrooms: "浴室数量",
+                                lot_size: "占地面积",
+                                distance_to_city_center: "距市中心距离",
+                                school_rating: "学校评分",
+                                house_age: "房龄",
+                              };
+                              return (
+                                <TableRow key={feature}>
+                                  <TableCell>{feature}</TableCell>
+                                  <TableCell>{zh[feature] || feature}</TableCell>
+                                  <TableCell className="text-right">{Number(value).toFixed(2)}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table className="min-w-max">
+                        <TableHeader className="bg-muted/50">
+                          <TableRow>
+                            <TableHead>Feature</TableHead>
+                            <TableHead>特征</TableHead>
+                            <TableHead className="text-right">Coefficient</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(modelInfo.lr_coefficients).map(([feature, value]) => {
+                            const zh: Record<string, string> = {
+                              square_footage: "面积",
+                              bedrooms: "卧室数量",
+                              bathrooms: "浴室数量",
+                              lot_size: "占地面积",
+                              distance_to_city_center: "距市中心距离",
+                              school_rating: "学校评分",
+                              house_age: "房龄",
+                            };
+                            return (
+                              <TableRow key={feature}>
+                                <TableCell>{feature}</TableCell>
+                                <TableCell>{zh[feature] || feature}</TableCell>
+                                <TableCell className="text-right">{Number(value).toFixed(2)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">暂无数据</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* --- 历史记录对比表格 --- */}
@@ -218,8 +365,8 @@ export function EstimatorContainer() {
               <Button variant="ghost" size="sm" onClick={() => setHistory([])} className="text-destructive"><Trash2 className="h-4 w-4 mr-1" /> 清空</Button>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border overflow-hidden">
-                <Table>
+              <div className="rounded-md border overflow-x-auto">
+                <Table className="min-w-max">
                   <TableHeader className="bg-muted/50">
                     <TableRow>
                       <TableHead>特征</TableHead>

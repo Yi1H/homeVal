@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -28,16 +28,17 @@ export function WhatIfPanel({
     school_rating: baseRecord?.school_rating ?? 7,
   }));
 
+  const onInputChangeRef = useRef(onInputChange);
   useEffect(() => {
-    onInputChange?.(simulated);
-  }, [onInputChange, simulated]);
+    onInputChangeRef.current = onInputChange;
+  }, [onInputChange]);
+
+  useEffect(() => {
+    onInputChangeRef.current?.(simulated);
+  }, [simulated]);
 
   const updateSimulated = (patch: Partial<typeof simulated>) => {
-    setSimulated((prev) => {
-      const next = { ...prev, ...patch };
-      onInputChange?.(next);
-      return next;
-    });
+    setSimulated((prev) => ({ ...prev, ...patch }));
   };
 
   const baseTitle = baseRecord ? `ID #${baseRecord.id}` : "未选择基准房源";

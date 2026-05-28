@@ -51,6 +51,18 @@ def train_model():
     joblib.dump(best_model, os.path.join(model_dir, 'house_price_model.joblib'))
     joblib.dump(scaler, os.path.join(model_dir, 'scaler.joblib'))
     
+    metrics_field_desc = [
+        ("model_type", "最终选用的模型类型（Random Forest / Linear Regression）"),
+        ("r2", "决定系数 R²（越接近 1 越好）"),
+        ("mae", "平均绝对误差 MAE（越小越好，单位与 price 一致）"),
+        ("mse", "均方误差 MSE（越小越好，单位为 price 的平方）"),
+        ("mape", "平均绝对百分比误差 MAPE（越小越好，0.1 ≈ 10%）"),
+        ("feature_names", "训练/推理使用的特征列名（与 utils.FEATURE_COLS 对齐）"),
+        ("lr_coefficients", "线性回归模型各特征的系数（顺序与 feature_names 对齐）"),
+        ("lr_intercept", "线性回归模型截距项"),
+        ("feature_importances", "随机森林特征重要性（只有最终选用随机森林时才有，否则为 None）"),
+    ]
+
     metrics = {
         "model_type": model_type,
         "r2": r2_rf if r2_rf > r2_lr else r2_lr,
@@ -62,6 +74,9 @@ def train_model():
         "lr_intercept": lr_model.intercept_,
         "feature_importances": rf_model.feature_importances_.tolist() if r2_rf > r2_lr else None
     }
+    print("\n--- 🧾 metrics 字段值 ---")
+    for key, desc in metrics_field_desc:
+        print(f"- {key} ({desc}): {metrics.get(key)}")
     joblib.dump(metrics, os.path.join(model_dir, 'model_metrics.joblib'))
     print(f"💾 所有模型文件已更新")
 
